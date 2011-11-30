@@ -1,0 +1,582 @@
+<!--
+ See LICENSE file.
+ -->
+
+<html>
+<head>
+<title>The Online CSS Spriter</title>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+<meta http-equiv="content-script-type" content="text/javascript">
+<meta name="description" content="Online CSS sprite packer. Drag and drop images into a single optimized image and get a CSS map onto the optimized image.">
+<meta name=author content="labs.hyperandroid.com">
+<meta name=apple-mobile-web-app-capable content=no>
+<meta name="keywords" content="CSS, texture packer, optimize images, drag and drop, html5, canvas, html5 experiment, sprite generator">
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-17485141-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+<style>
+
+    html, body{
+        font: 0.9em Verdana,Arial,Geneva,Helvetica,sans-serif;
+        background: #E7DEC0;
+        margin: 0px;
+        padding:0px;
+        color: #250701;
+    }
+
+    .imagescsstext {
+        overflow: auto;
+        height: 600px;
+    }
+
+    .imagesdesc {
+        overflow: auto;
+        height: 600px;
+    }
+
+
+    .blockcontrol {
+        pagging: 5px;
+    }
+
+    .control {
+        background: #6D4320;
+        width: 100%;
+        color: #E7DEC0;
+        text-shadow: black 0px 1px 0px;
+        border-bottom:#250701 2px solid;
+    }
+
+    .control_content{
+        padding:5px;
+    }
+
+    .imagesdata{
+        float:left;
+    }
+
+    .pre_editDrop{
+        border: 5px dashed #9f7653;
+        -webkit-border-radius: 10px;
+        -moz-border-radius: 10px;
+        border-radius: 10px;
+        width: 500px;
+        height: 500px;
+    }
+
+    .pre_edit{
+        border: 5px dashed #6D4320;
+        -webkit-border-radius: 10px;
+        -moz-border-radius: 10px;
+        border-radius: 10px;
+        width: 500px;
+        height: 500px;
+    }
+
+    .info{
+        line-height:1.7em;
+    }
+
+    .dropmsg, .dropmsg2{
+        background: #333;
+        -webkit-border-radius: 10px;
+        -moz-border-radius: 10px;
+        border-radius: 10px;
+        color:white;
+        padding:10px;
+    }
+
+    .dropmsg2{
+        background: #666;
+    }
+
+    #msg{
+        margin-top:20px;
+    }
+
+    .block1{
+        width:500px;
+        padding:10px;
+    }
+
+    .block2{
+        min-width:180px;
+        max-width:320px;
+        padding:5px;
+    }
+
+    .block3{
+        min-width:180px;
+        max-width:320px;
+        padding:5px;
+    }
+
+    code{
+        font: 1em Verdana,Arial,Geneva,Helvetica,sans-serif;
+        background: #222;
+        padding:2px;
+    }
+
+    .middle{
+        font: 5em Verdana,Arial,Geneva,Helvetica,sans-serif;
+        text-align:center;
+        position: absolute;
+    }
+
+    .error{
+        color: red;
+        font: 5em Verdana,Arial,Geneva,Helvetica,sans-serif;
+        text-align:center;
+        position: absolute;
+    }
+
+    .extractor {
+        display: none;
+    }
+
+</style>
+
+</head>
+
+
+<body class="body" onload="initialize();">
+
+<div id="extractor" class="extractor">
+    <div class="extractor_content">
+        <div class="pre_edit" id="extractor_droparea">
+            <canvas id="extractor_canvas"></canvas>
+        </div>
+    </div>
+</div>
+
+<div id="packer">
+    <div class="control">
+        <div class="control_content">
+            <span class="blockcontrol">
+                <span>Packed texture dimensions:</span>
+                <span><input id="_width"  value="1024" maxlength="5" size="5"></span>
+                <span><input id="_height" value="1024" maxlength="5" size="5"></span>
+                <span><input type="button" value="Update canvas size" onclick="updatePacker();"></span>
+            </span>
+            <span class="blockcontrol">
+                <span>Padding:</span>
+                <span><input id="_padding" value="2" maxlength="2" size="2"></span>
+            </span>
+            <span class="blockcontrol">
+                <span>Optimize</span>
+                <span><input type='checkbox' id='_optimize'></span>
+            </span>
+            <span class="blockcontrol">
+                <span>
+                    Heuristic:
+                </span>
+                <span>
+                    <select onchange="changeHeuristic(this.options[this.selectedIndex].value);">
+                        <option selected>Area</option>
+                        <option>Width</option>
+                        <option>Height</option>
+                    </select>
+                </span>
+            </span>
+            <span class="blockcontrol">
+                <span><input type="button" value="Clear" onclick="clearPacker();"></span>
+            </span>
+            <span class="blockcontrol">
+                <span><input type="button" value="Export Image" onclick="exportImages();"></span>
+            </span>
+            <!--
+            <span class="blockcontrol">
+                <span><input type="button" value="Extractor" onclick="extractor();"></span>
+            </span>
+-->
+            <span style="float: right;">
+                <a href="http://twitter.com/share" class="twitter-share-button" data-count="horizontal" data-via="hyperandroid">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
+            </span>
+            <span style="float:right;">
+                <iframe src="http://www.facebook.com/plugins/like.php?href=http%3A%2F%2Flabs.hyperandroid.com/static/texture/spriter.html&amp;layout=button_count&amp;show_faces=false&amp;width=120&amp;action=like&amp;font=arial&amp;colorscheme=light&amp;height=21" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:120px; height:21px;" allowTransparency="true"></iframe>
+            </span>
+        </div>
+    </div>
+
+    <div>
+      <div class="imagesdata block1">
+          <div class="pre_edit" id="droparea">
+              <canvas id="packer_canvas"></canvas>
+          </div>
+          <div class="drop">
+
+          </div>
+
+          <div class='info'>
+              <div class="dropmsg" id="msg">
+                  A scaled version of the final packet texture will be shown.<br>
+                  Play with the <code>heuristic</code> values to try different packing layouts.<br>
+                  Enable <code>optimize</code> checkbox to remove trailing empty space around images.<br>
+                  Set <code>padding</code> value to add some extra space around packed images.<br>
+                  Set a custom packed image size and press 'update canvas size' to apply it.<br>
+
+                  When you're done, press <code>Export Image</code> to get your CSS sprited image.<br>
+
+                  Images which don't fit into the defined size, will silently be ignored.
+              </div>
+          </div>
+
+      </div>
+
+      <div class="imagesdata block2">
+          <div class="info dropmsg">
+              Copy this context as your css style map into the packed created texture.
+          </div>
+          <div class="imagescsstext bloque dropmsg2 info" id="imagescsstext" style="display:none;margin-top:15px;"></div>
+      </div>
+
+      <div class="imagesdata block3">
+          <div class="info dropmsg">
+              This is additional info about the individual images.
+              Write into the field a text of the form <code>&lt;number&gt;x&lt;number&gt;</code>
+              (in example 3x3) to instrument the system to create css descriptors
+              for 9 subimages from the target image. This is useful to treat an
+              image as a compound image.
+          </div>
+          <div class="imagesdesc bloque dropmsg2 info" id="imagesdesc" style="display:none;margin-top:15px;"></div>
+      </div>
+
+      <div style="clear:both;"></div>
+
+    </div>
+</div>
+
+<script src="namespace.js"></script>
+<script src="image-util.js"></script>
+<script src="texture-page.js"></script>
+<script src="spriter.js"></script>
+
+<script type="text/javascript">
+
+    var canvas;
+    var ctx= null;
+
+    var packer= new TP.Packer();
+
+    function buildDropMessage(canvas, message, id, sclass) {
+        var msg=            document.createElement('div');
+        msg.className=      sclass;
+        msg.style.left=     (canvas.offsetLeft+20)+'px';
+        msg.style.top=      (canvas.offsetTop+20)+'px';
+        msg.style.width=    (canvas.offsetWidth-40)+'px';
+        msg.style.height=   (canvas.offsetHeight-40)+'px';
+        msg.innerHTML=      message;
+        msg.id=             id;
+        msg.addEventListener( 'dragover',  function(e) {
+            e.target.style.display='none';
+        }, false );
+
+        canvas.parentNode.appendChild(msg);
+
+    }
+
+    function initialize() {
+        canvas = document.getElementById("packer_canvas");
+        canvas.width= 500;
+        canvas.height= 500;
+
+        if ( window.FileReader ) {
+            ctx= canvas.getContext("2d");
+            buildDropMessage(canvas,'Drop one or more images <b>here</b>', 'help_message', 'middle');
+        } else {
+            buildDropMessage(
+                    canvas,
+                    "Your browser can't run the packer properly."+
+                            "Use Chrome or Firefox.",
+                    'help_message',
+                    'error');
+        }
+    }
+
+    var elem_container= document.getElementById('packer_canvas');
+    elem_container.addEventListener( 'mousedown', onDocumentMouseDown, false );
+    elem_container.addEventListener( 'dragover',  onDocumentDragOver, false );
+    elem_container.addEventListener( 'dragleave', onDocumentLeave, false );
+    elem_container.addEventListener( 'drop',      onDocumentDrop, false );
+
+    function onDocumentMouseDown(event) {
+        event.stopPropagation();
+	    event.preventDefault();
+    }
+
+    function onDocumentDragOver(event) {
+        event.stopPropagation();
+	    event.preventDefault();
+        document.getElementById('droparea').className= 'pre_editDrop';
+        document.getElementById('help_message').style.display='none';
+    }
+
+    function onDocumentLeave(event) {
+        event.stopPropagation();
+	    event.preventDefault();
+
+        document.getElementById('droparea').className= 'pre_edit';
+        if ( !page.images.length ) {
+            document.getElementById('help_message').style.display='block';
+        }
+    }
+
+    function onDocumentDrop(event) {
+
+        document.getElementById('droparea').className= 'pre_edit';
+
+        event.preventDefault();
+
+        document.getElementById('packer_canvas').className='';
+        document.getElementById('imagescsstext').style.display='block';
+        document.getElementById('imagesdesc').style.display='block';
+
+        function errorHandler(evt) {
+            switch(evt.target.error.code) {
+              case evt.target.error.NOT_FOUND_ERR:
+                alert('File Not Found!');
+                break;
+              case evt.target.error.NOT_READABLE_ERR:
+                alert('File is not readable');
+                break;
+              case evt.target.error.ABORT_ERR:
+                break; // noop
+              default:
+                alert('An error occurred reading this file.');
+            };
+          }
+
+        for( var i=0; i<event.dataTransfer.files.length; i++ ) {
+
+            (function(file) {
+                var reader = new FileReader();
+
+                reader.onerror= errorHandler;
+                reader.onloadend = function ( ev ) {
+
+                    if (ev.target.readyState == FileReader.DONE) {
+                        var _image = document.createElement( 'image' );
+
+                        _image.onload = function () {
+
+                            packer.addImage( file.name, this );
+                            updatePageInfo();
+                        };
+                        _image.src = ev.target.result;
+                    }
+                };
+
+                reader.readAsDataURL( file );
+            })(event.dataTransfer.files[i]);
+        }
+
+    }
+
+    function updatePacker() {
+
+        var padding= parseInt(document.getElementById("_padding").value,10);
+        if ( -1==padding ) {
+            padding= 4;
+        }
+        var invert= false;
+        var width= parseInt(document.getElementById("_width").value,10);
+        var height= parseInt(document.getElementById("_height").value,10);
+
+        packer.updatePacker( width||2048, height||2048, padding );
+        updatePageInfo();
+    }
+
+    function clearPacker() {
+        document.getElementById('help_message').style.display='block';
+        page.clear();
+        updatePageInfo();
+        //ctx.drawImage( page.toCanvas(), 0, 0, canvas.width, canvas.height );
+        ctx.fillStyle='rgba(0,0,0,0)';
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+    }
+
+    function updateCSS() {
+
+        function cssElement( name, x, y, w, h, r, c ) {
+            var csstext= '';
+
+            if ( -1!==r && -1!==c ) {
+                csstext+= '.'+ name + '_'+r+'_'+c+ ' {<br>';
+                csstext+= '&nbsp;  background: url("packed_img.png") no-repeat -'+(x+c*w)+"px -"+(y+r*h)+"px;<br>";
+            } else {
+                csstext+= '.'+ name + ' {<br>';
+                csstext+= '&nbsp;  background: url("packed_img.png") no-repeat -'+x+"px -"+y+"px;<br>";
+            }
+            csstext+= '&nbsp;  width:  '+w+'px;<br>';
+            csstext+= '&nbsp;  height: '+h+'px;<br>';
+            csstext+= '}<br><br>';
+
+            return csstext;
+        }
+
+        var css=document.getElementById('imagescsstext');
+        var csstext='';
+
+        css.innerHTML='';
+
+        for( var i=0, l=packer.getNumImages(); i<l; i++ ) {
+            var imageEl= packer.getImageElement(i);
+            var bi= imageEl.getName().replace('.','_');
+
+            var img= imageEl.getImage();
+            csstext+= cssElement( bi, img.__tx, img.__ty, img.__w, img.__h, -1, -1);
+
+            if ( imageEl.getRows()!=1 || imageEl.getColumns()!=1 ) {
+                for( var t=0; t<imageEl.getRows(); t++ ) {
+                    for( var u=0; u<imageEl.getColumns(); u++ ) {
+                        csstext+= cssElement(
+                            bi,
+                            img.__tx,
+                            img.__ty,
+                            img.__w / imageEl.getColumns(),
+                            img.__h / imageEl.getRows(),
+                            t,
+                            u);
+                    }
+                }
+            }
+
+        }
+
+        css.innerHTML=csstext;
+    }
+
+    function updatePageInfo() {
+
+        var table= document.createElement('table');
+        table.setAttribute('border',"0");
+        table.setAttribute('cellpadding',"0");
+        table.setAttribute('cellspacing',"2");
+        table.setAttribute('width',"100%");
+        table.style['font-size']= '1em';
+        table.style['table-layout']= 'fixed';
+
+        var dc= document.createDocumentFragment();
+        dc.appendChild(table);
+
+
+        for( var i=0, l=packer.getNumImages(); i<l; i++ ) {
+
+            var image= packer.getImageElement(i);
+
+            var tr= document.createElement('tr');
+            table.appendChild(tr);
+            tr.className= 'dropmsg2';
+
+                var imgthumb= document.createElement('td');
+                    imgthumb.setAttribute('width','24');
+                    imgthumb.setAttribute('nowrap','nowrap');
+                    imgthumb.appendChild( image.getThumbImage() );
+
+                var imgname= document.createElement('td');
+                    imgname.setAttribute('width','190');
+                    imgname.setAttribute('nowrap','nowrap');
+                    imgname.style['width']='190px';
+                    imgname.style['overflow']= 'hidden';
+                    imgname.style['white-space']= 'nowrap';
+                    imgname.setAttribute('title',image.getName() );
+                    var bi= image.getName();
+                    imgname.innerHTML= bi.length>22 ? bi.substr(0,22)+'...' : bi;
+
+                var imggrid= document.createElement('td');
+                    imggrid.setAttribute('width','100%');
+
+                    var input= document.createElement('input');
+                    input.type='text';
+                    input.style['width']='99%';
+                    if ( image.getRows()!=1 || image.getColumns()!=1 ) {
+                        input.value= ''+image.getRows()+'x'+image.getColumns();
+                    }
+                    imggrid.appendChild(input);
+                    input.onchange= (function(image) {
+                        return function() {
+                            if ( null===this.value || ""===this.value ) {
+                                image.setGridSize(1,1);
+                                updateCSS();
+                                repaint();
+
+                            } else {
+                                // find and extrax a pattern <number>x<number>
+                                var re= /(\d+)x(\d+)/g;
+                                var m = re.exec(this.value);
+                                if (null!==m ) {
+                                    var rows= parseInt(m[1],10);
+                                    var columns= parseInt(m[2],10);
+
+                                    image.setGridSize( rows, columns );
+
+                                    updateCSS();
+                                    repaint();
+                                }
+                            }
+                        }
+                    })(image);
+
+                tr.appendChild(imgthumb);
+                tr.appendChild(imgname);
+                tr.appendChild(imggrid);
+        }
+
+        var dst= document.getElementById('imagesdesc');
+        while (dst.hasChildNodes()) {
+            dst.removeChild(dst.lastChild);
+        }
+        dst.appendChild(dc);
+
+        repaint();
+
+        updateCSS();
+    }
+
+    function repaint() {
+        ctx.fillStyle='rgb(128,128,128)';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage( packer.getCanvas(), 0, 0, canvas.width, canvas.height );
+    }
+
+    function exportImages() {
+        var canvas= packer.getCanvas();
+        var str= "image/png";
+        var strData= canvas.toDataURL(str);
+        document.location.href= strData.replace( str, "image/octet-stream" );
+    }
+
+    function changeHeuristic(event) {
+        page.changeHeuristic(event.toLowerCase());
+        updatePacker();
+    }
+
+    function extractor() {
+        var packer= document.getElementById('packer');
+        packer.style.display= 'none';
+
+        var extractor= document.getElementById('extractor');
+        extractor.style.display= 'block';
+        var extractor_canvas= document.getElementById('extractor_canvas');
+        extractor_canvas.width= 500;
+        extractor_canvas.height= 500;
+        buildDropMessage(extractor_canvas,'Drop one image <b>here</b>','extractor_help_message');
+    }
+
+</script>
+
+</body>
+</html>
