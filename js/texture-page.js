@@ -224,8 +224,6 @@
 
         width:                  1024,
         height:                 1024,
-        gl:                     null,
-        texture:                null,
         allowImagesInvertion:   false,
         padding:                4,
         scan:                   null,
@@ -411,6 +409,7 @@
                 TP.log('Imagen ',img.src,' de tama–o ',img.width,img.height,' no cabe.');
             }
         },
+
         changeHeuristic : function(criteria) {
             this.criteria= criteria;
         }

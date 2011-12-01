@@ -151,9 +151,10 @@ TP.ImageUtil= {};
         return canvas;
     };
 
-    TP.ImageUtil.extract= function( image, x, y, threshold ) {
+    TP.ImageUtil.extract= function( canvas, x, y, threshold ) {
 
-        var imageData= image.getImageData( 0, 0, image.width, image.height );
+        var ctx= canvas.getContext('2d');
+        var imageData= ctx.getImageData( 0, 0, canvas.width, canvas.height );
         var data=      imageData.data;  // RGBA
 
         // start calculating concentric rectangles.
@@ -171,17 +172,18 @@ TP.ImageUtil= {};
         var clean=          true;
 
         var i,j;
-
-        if ( data[y*image.width+x]>threshold ) {
-            return null;
-        }
+        var w= 0;
+        var h= 0;
 
         do {
 
+            w= currentX1-currentX0+1;
+            h= currentY1-currentY0+1;
+
             clean= true;
             if ( checkTop ) {
-                i= currentY0 * image.width * 4;
-                for( j=0; clean && j < currentX1-currentX0; j++ ) {
+                i= currentY0 * canvas.width * 4;
+                for( j=0; clean && j < w; j++ ) {
                     if ( data[ i + j*4 + 3 ] > threshold ) {
                         clean= false;
                         break;
@@ -202,8 +204,8 @@ TP.ImageUtil= {};
 
             clean= true;
             if ( checkBottom ) {
-                i= currentY1 * image.width * 4;
-                for( j=0; clean && j < currentX1-currentX0; j++ ) {
+                i= currentY1 * canvas.width * 4;
+                for( j=0; clean && j < w; j++ ) {
                     if ( data[ i + j*4 + 3 ] > threshold ) {
                         clean= false;
                         break;
@@ -212,7 +214,7 @@ TP.ImageUtil= {};
 
                 // found an invalid pixel
                 if ( !clean ) {
-                    if ( currentY1<image.height ) {
+                    if ( currentY1<canvas.height-1 ) {
                         currentY1++;
                     } else {
                         checkBottom= false;
@@ -224,10 +226,10 @@ TP.ImageUtil= {};
 
             clean= true;
             if ( checkLeft ) {
-                i= currentY0 * image.width * 4 + currentX0 * 4;
+                i= currentY0 * canvas.width * 4 + currentX0 * 4;
 
-                for( j=0; clean && j < currentY1-currentY0; j++ ) {
-                    if ( data[ i + j*image.width*4 + 3 ] > threshold ) {
+                for( j=0; clean && j < h; j++ ) {
+                    if ( data[ i + j*canvas.width*4 + 3 ] > threshold ) {
                         clean= false;
                         break;
                     }
@@ -246,11 +248,11 @@ TP.ImageUtil= {};
             }
 
             clean= true;
-            if ( checkLeft ) {
-                i= currentY0 * image.width * 4 + currentX1 * 4;
+            if ( checkRight ) {
+                i= currentY0 * canvas.width * 4 + currentX1 * 4;
 
-                for( j=0; clean && j < currentY1-currentY0; j++ ) {
-                    if ( data[ i + j*image.width*4 + 3 ] > threshold ) {
+                for( j=0; clean && j < h; j++ ) {
+                    if ( data[ i + j*canvas.width*4 + 3 ] > threshold ) {
                         clean= false;
                         break;
                     }
@@ -258,7 +260,7 @@ TP.ImageUtil= {};
 
                 // found an invalid pixel
                 if ( !clean ) {
-                    if ( currentX1<image.width ) {
+                    if ( currentX1<canvas.width-1 ) {
                         currentX1++;
                     } else {
                         checkRight= false;
@@ -273,15 +275,13 @@ TP.ImageUtil= {};
 
         // The rectangle composed from (currentX0,currentY0)-(currentX1,currentY1) has the expected sub-image.
 
-        var w= currentX1-currentX0+1;
-        var h= currentY1-currentY0+1;
-        var canvas= document.createElement('canvas');
-        canvas.width= w;
-        canvas.height= h;
-        var ctx= canvas.getContext('2d');
+        var canvasr= document.createElement('canvas');
+        canvasr.width= w;
+        canvasr.height= h;
+        var ctxr= canvasr.getContext('2d');
 
-        ctx.drawImage( image, currentX0, currentY0, w, h, 0, 0, w, h);
-        return canvas;
+        ctxr.drawImage( canvas, currentX0, currentY0, w, h, 0, 0, w, h);
+        return canvasr;
     };
 
 })();

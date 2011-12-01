@@ -163,6 +163,9 @@
          * Reset this packer. All images and contained info will be removed.
          */
         clear : function() {
+            this.imagesList= [];
+            this.texturePage.clear();
+            this.ctx.clearRect(0,0,this.workingCanvas.width,this.workingCanvas.height);
             return this;
         },
 

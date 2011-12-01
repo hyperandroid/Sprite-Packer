@@ -305,6 +305,7 @@
         var img= TP.ImageUtil.extract( canvas, posx, posy, 32 );
         if ( null!=img ) {
             packer.addImage( 'abcd', img );
+            repaint();
         }
     }
 
@@ -325,7 +326,7 @@
                     'error');
         }
 
-        //canvas.addEventListener( 'mouseclick', onCanvasClick, false );
+        canvas.addEventListener( 'mouseup', onCanvasClick, false );
     }
 
     var elem_container= document.getElementById('packer_canvas');
@@ -423,11 +424,9 @@
 
     function clearPacker() {
         document.getElementById('help_message').style.display='block';
-        page.clear();
+        packer.clear();
         updatePageInfo();
-        //ctx.drawImage( page.toCanvas(), 0, 0, canvas.width, canvas.height );
-        ctx.fillStyle='rgba(0,0,0,0)';
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+        repaint();
     }
 
     function updateCSS() {
@@ -569,8 +568,8 @@
     }
 
     function repaint() {
-        ctx.fillStyle='rgb(128,128,128)';
-        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle='rgba(0,0,0,0)';
+        ctx.clearRect(0,0,canvas.width,canvas.height);
         ctx.drawImage( packer.getCanvas(), 0, 0, canvas.width, canvas.height );
     }
 
@@ -582,7 +581,7 @@
     }
 
     function changeHeuristic(event) {
-        page.changeHeuristic(event.toLowerCase());
+        packer.changeHeuristic(event.toLowerCase());
         updatePacker();
     }
 
