@@ -151,4 +151,137 @@ TP.ImageUtil= {};
         return canvas;
     };
 
+    TP.ImageUtil.extract= function( image, x, y, threshold ) {
+
+        var imageData= image.getImageData( 0, 0, image.width, image.height );
+        var data=      imageData.data;  // RGBA
+
+        // start calculating concentric rectangles.
+        var currentWidth=   1;
+        var currentHeight=  1;
+        var endProcess=     false;
+        var currentX0=      x;
+        var currentY0=      y;
+        var currentX1=      x;
+        var currentY1=      y;
+        var checkTop=       true;
+        var checkBottom=    true;
+        var checkLeft=      true;
+        var checkRight=     true;
+        var clean=          true;
+
+        var i,j;
+
+        if ( data[y*image.width+x]>threshold ) {
+            return null;
+        }
+
+        do {
+
+            clean= true;
+            if ( checkTop ) {
+                i= currentY0 * image.width * 4;
+                for( j=0; clean && j < currentX1-currentX0; j++ ) {
+                    if ( data[ i + j*4 + 3 ] > threshold ) {
+                        clean= false;
+                        break;
+                    }
+                }
+
+                // found an invalid pixel
+                if ( !clean ) {
+                    if ( currentY0>0 ) {
+                        currentY0--;
+                    } else {
+                        checkTop= false;
+                    }
+                } else {
+                    checkTop= false;
+                }
+            }
+
+            clean= true;
+            if ( checkBottom ) {
+                i= currentY1 * image.width * 4;
+                for( j=0; clean && j < currentX1-currentX0; j++ ) {
+                    if ( data[ i + j*4 + 3 ] > threshold ) {
+                        clean= false;
+                        break;
+                    }
+                }
+
+                // found an invalid pixel
+                if ( !clean ) {
+                    if ( currentY1<image.height ) {
+                        currentY1++;
+                    } else {
+                        checkBottom= false;
+                    }
+                } else {
+                    checkBottom= false;
+                }
+            }
+
+            clean= true;
+            if ( checkLeft ) {
+                i= currentY0 * image.width * 4 + currentX0 * 4;
+
+                for( j=0; clean && j < currentY1-currentY0; j++ ) {
+                    if ( data[ i + j*image.width*4 + 3 ] > threshold ) {
+                        clean= false;
+                        break;
+                    }
+                }
+
+                // found an invalid pixel
+                if ( !clean ) {
+                    if ( currentX0>0 ) {
+                        currentX0--;
+                    } else {
+                        checkLeft= false;
+                    }
+                } else {
+                    checkLeft= false;
+                }
+            }
+
+            clean= true;
+            if ( checkLeft ) {
+                i= currentY0 * image.width * 4 + currentX1 * 4;
+
+                for( j=0; clean && j < currentY1-currentY0; j++ ) {
+                    if ( data[ i + j*image.width*4 + 3 ] > threshold ) {
+                        clean= false;
+                        break;
+                    }
+                }
+
+                // found an invalid pixel
+                if ( !clean ) {
+                    if ( currentX1<image.width ) {
+                        currentX1++;
+                    } else {
+                        checkRight= false;
+                    }
+                } else {
+                    checkRight= false;
+                }
+            }
+
+
+        } while( checkRight || checkLeft || checkTop || checkBottom );
+
+        // The rectangle composed from (currentX0,currentY0)-(currentX1,currentY1) has the expected sub-image.
+
+        var w= currentX1-currentX0+1;
+        var h= currentY1-currentY0+1;
+        var canvas= document.createElement('canvas');
+        canvas.width= w;
+        canvas.height= h;
+        var ctx= canvas.getContext('2d');
+
+        ctx.drawImage( image, currentX0, currentY0, w, h, 0, 0, w, h);
+        return canvas;
+    };
+
 })();
