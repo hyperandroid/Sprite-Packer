@@ -198,16 +198,13 @@
                 <span><input type="button" value="Export Image" onclick="exportImages();"></span>
             </span>
             <!--
-            <span class="blockcontrol">
-                <span><input type="button" value="Extractor" onclick="extractor();"></span>
-            </span>
--->
             <span style="float: right;">
                 <a href="http://twitter.com/share" class="twitter-share-button" data-count="horizontal" data-via="hyperandroid">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
             </span>
             <span style="float:right;">
                 <iframe src="http://www.facebook.com/plugins/like.php?href=http%3A%2F%2Flabs.hyperandroid.com/static/texture/spriter.html&amp;layout=button_count&amp;show_faces=false&amp;width=120&amp;action=like&amp;font=arial&amp;colorscheme=light&amp;height=21" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:120px; height:21px;" allowTransparency="true"></iframe>
             </span>
+            -->
         </div>
     </div>
 
@@ -240,7 +237,9 @@
           <div class="info dropmsg">
               Copy this context as your css style map into the packed created texture.
           </div>
-          <div class="imagescsstext bloque dropmsg2 info" id="imagescsstext" style="display:none;margin-top:15px;"></div>
+          <div class="imagescsstext dropmsg2 info" id="imagescsstext_" style="display:none;margin-top:15px;">
+              <textarea class="imagescsstext bloque info" style="width:100%;" id="imagescsstext"></textarea>
+          </div>
       </div>
 
       <div class="imagesdata block3">
@@ -260,6 +259,7 @@
 </div>
 
 <script src="js/namespace.js"></script>
+<script src="js/dom.js"></script>
 <script src="js/image-util.js"></script>
 <script src="js/texture-page.js"></script>
 <script src="js/spriter.js"></script>
@@ -291,18 +291,10 @@
     function onCanvasClick(e) {
         e.preventDefault();
 
-        var posx, posy;
+        var pos= TP.getCoord(e);
 
-        if (e.pageX || e.pageY) {
-            posx = e.pageX;
-            posy = e.pageY;
-        }
-        else if (e.clientX || e.clientY) {
-            posx = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-            posy = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
-        }
+        var img= TP.ImageUtil.extract( canvas, pos.x, pos.y, 32 );
 
-        var img= TP.ImageUtil.extract( canvas, posx, posy, 32 );
         if ( null!=img ) {
             packer.addImage( 'abcd', img );
             repaint();
@@ -352,7 +344,7 @@
 	    event.preventDefault();
 
         document.getElementById('droparea').className= 'pre_edit';
-        if ( !page.images.length ) {
+        if ( !packer.getNumImages() ) {
             document.getElementById('help_message').style.display='block';
         }
     }
@@ -364,6 +356,7 @@
         event.preventDefault();
 
         document.getElementById('packer_canvas').className='';
+        document.getElementById('imagescsstext_').style.display='block';
         document.getElementById('imagescsstext').style.display='block';
         document.getElementById('imagesdesc').style.display='block';
 
@@ -429,21 +422,25 @@
         repaint();
     }
 
+    function updateOutput() {
+        return updateCAAT();
+    }
+
     function updateCSS() {
 
         function cssElement( name, x, y, w, h, r, c ) {
             var csstext= '';
 
             if ( -1!==r && -1!==c ) {
-                csstext+= '.'+ name + '_'+r+'_'+c+ ' {<br>';
-                csstext+= '&nbsp;  background: url("packed_img.png") no-repeat -'+(x+c*w)+"px -"+(y+r*h)+"px;<br>";
+                csstext+= '.'+ name + '_'+r+'_'+c+ ' {\n';
+                csstext+= '   background: url("packed_img.png") no-repeat -'+(x+c*w)+"px -"+(y+r*h)+"px;\n";
             } else {
-                csstext+= '.'+ name + ' {<br>';
-                csstext+= '&nbsp;  background: url("packed_img.png") no-repeat -'+x+"px -"+y+"px;<br>";
+                csstext+= '.'+ name + ' {\n';
+                csstext+= '   background: url("packed_img.png") no-repeat -'+x+"px -"+y+"px;\n";
             }
-            csstext+= '&nbsp;  width:  '+w+'px;<br>';
-            csstext+= '&nbsp;  height: '+h+'px;<br>';
-            csstext+= '}<br><br>';
+            csstext+= '   width:  '+w+'px;\n';
+            csstext+= '   height: '+h+'px;\n';
+            csstext+= '}\n\n';
 
             return csstext;
         }
@@ -480,6 +477,74 @@
         css.innerHTML=csstext;
     }
 
+    function updateCAAT() {
+        function cssElement( name, x, y, w, h, r, c ) {
+            var csstext= "\n";
+
+            if ( -1!==r && -1!==c ) {
+                csstext+= "&nbsp;"+ name + '_'+r+'_'+c+ ": {\n";
+                csstext+= '&nbsp;  x: '+(x+c*w)+",\n";
+                csstext+= '&nbsp;  y: '+(y+r*h)+",\n";
+            } else {
+                csstext+= "&nbsp;" + name + ": {\n";
+                csstext+= '&nbsp;  x: '+x+",\n";
+                csstext+= '&nbsp;  y: '+y+",\n";
+            }
+
+            csstext+= '&nbsp;  width:  '+w+',\n';
+            csstext+= '&nbsp;  height: '+h+'\n';
+
+            csstext+= '}\n';
+
+            return csstext;
+        }
+
+        var css=document.getElementById('imagescsstext');
+        var csstext='';
+
+        css.innerHTML='';
+
+
+        csstext= "{";
+
+        for( var i=0, l=packer.getNumImages(); i<l; i++ ) {
+            var imageEl= packer.getImageElement(i);
+            var bi= imageEl.getName().replace('.','_');
+
+            var img= imageEl.getImage();
+            csstext+= cssElement( bi, img.__tx, img.__ty, img.__w, img.__h, -1, -1);
+
+            if ( imageEl.getRows()!=1 || imageEl.getColumns()!=1 ) {
+                csstext+=',';
+                
+                for( var t=0; t<imageEl.getRows(); t++ ) {
+                    for( var u=0; u<imageEl.getColumns(); u++ ) {
+                        csstext+= cssElement(
+                            bi,
+                            img.__tx,
+                            img.__ty,
+                            img.__w / imageEl.getColumns(),
+                            img.__h / imageEl.getRows(),
+                            t,
+                            u);
+
+                        if ( t*imageEl.getColumns()+u < imageEl.getRows()*imageEl.getColumns()-1 ) {
+                            csstext+=",";
+                        }
+                    }
+                }
+            }
+
+            if ( i<l-1 ) {
+                csstext+=',';
+            }
+        }
+
+        csstext+= "}";
+
+        css.innerHTML=csstext;
+    }
+
     function updatePageInfo() {
 
         var table= document.createElement('table');
@@ -508,14 +573,28 @@
                     imgthumb.appendChild( image.getThumbImage() );
 
                 var imgname= document.createElement('td');
-                    imgname.setAttribute('width','190');
-                    imgname.setAttribute('nowrap','nowrap');
-                    imgname.style['width']='190px';
-                    imgname.style['overflow']= 'hidden';
-                    imgname.style['white-space']= 'nowrap';
-                    imgname.setAttribute('title',image.getName() );
-                    var bi= image.getName();
-                    imgname.innerHTML= bi.length>22 ? bi.substr(0,22)+'...' : bi;
+                    imgname.setAttribute('width','150');
+
+                    var inputName= document.createElement('input');
+                    inputName.type='text';
+                    inputName.style['width']='99%';
+                    inputName.value= image.getName();
+                    imgname.appendChild( inputName );
+                    inputName.onchange= (function(image) {
+
+                        return function() {
+                            var v= this.value.trim();
+                            if ( null===v || ""===v ) {
+                                return;
+                            }
+
+                            image.setName( v );
+
+                            updateOutput();
+                            repaint();
+
+                        }
+                    })(image);
 
                 var imggrid= document.createElement('td');
                     imggrid.setAttribute('width','100%');
@@ -531,7 +610,7 @@
                         return function() {
                             if ( null===this.value || ""===this.value ) {
                                 image.setGridSize(1,1);
-                                updateCSS();
+                                updateOutput();
                                 repaint();
 
                             } else {
@@ -544,16 +623,34 @@
 
                                     image.setGridSize( rows, columns );
 
-                                    updateCSS();
+                                    updateOutput();
                                     repaint();
                                 }
                             }
                         }
                     })(image);
 
+                var remove= document.createElement('td');
+                    remove.setAttribute( 'width', 30 );
+
+                    var img= document.createElement('image');
+                    img.src= 'res/remove.png';
+                    img.onclick= (function(image) {
+                        return function() {
+                            if ( confirm('Remove '+image.getName()+'?') ) {
+                                packer.removeImage( image.getName() );
+                                updateOutput();
+                                repaint();
+                            }
+                        }
+                    })(image);
+
+                    remove.appendChild( img );
+
                 tr.appendChild(imgthumb);
                 tr.appendChild(imgname);
                 tr.appendChild(imggrid);
+                tr.appendChild(remove);
         }
 
         var dst= document.getElementById('imagesdesc');
@@ -564,7 +661,7 @@
 
         repaint();
 
-        updateCSS();
+        updateOutput();
     }
 
     function repaint() {

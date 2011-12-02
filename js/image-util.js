@@ -157,14 +157,16 @@ TP.ImageUtil= {};
         var imageData= ctx.getImageData( 0, 0, canvas.width, canvas.height );
         var data=      imageData.data;  // RGBA
 
+
+        if ( data[ ( x + y * canvas.width ) *4 + 3 ] <= threshold ) {
+            return null;
+        }
+
         // start calculating concentric rectangles.
-        var currentWidth=   1;
-        var currentHeight=  1;
-        var endProcess=     false;
         var currentX0=      x;
         var currentY0=      y;
-        var currentX1=      x;
-        var currentY1=      y;
+        var currentX1=      x+2;
+        var currentY1=      y+2;
         var checkTop=       true;
         var checkBottom=    true;
         var checkLeft=      true;
@@ -175,16 +177,28 @@ TP.ImageUtil= {};
         var w= 0;
         var h= 0;
 
+        var off_t, off_b, off_l, off_r;
+
         do {
 
-            w= currentX1-currentX0+1;
-            h= currentY1-currentY0+1;
+            checkTop=       true;
+            checkBottom=    true;
+            checkLeft=      true;
+            checkRight=     true;
+
+            w= currentX1-currentX0;
+            h= currentY1-currentY0;
+
+            off_t= ( currentX0 + currentY0 * canvas.width ) *4;
+            off_b= ( currentX0 + currentY1 * canvas.width ) *4;
+
+            off_l= ( currentX0 + ( currentY0 + 1 ) * canvas.width ) *4;
+            off_r= ( currentX1 + ( currentY0 + 1 ) * canvas.width ) *4;
 
             clean= true;
             if ( checkTop ) {
-                i= currentY0 * canvas.width * 4;
-                for( j=0; clean && j < w; j++ ) {
-                    if ( data[ i + j*4 + 3 ] > threshold ) {
+                for( j=0; clean && j <= w; j++ ) {
+                    if ( data[ off_t + j*4 + 3 ] > threshold ) {
                         clean= false;
                         break;
                     }
@@ -204,9 +218,8 @@ TP.ImageUtil= {};
 
             clean= true;
             if ( checkBottom ) {
-                i= currentY1 * canvas.width * 4;
-                for( j=0; clean && j < w; j++ ) {
-                    if ( data[ i + j*4 + 3 ] > threshold ) {
+                for( j=0; clean && j <= w; j++ ) {
+                    if ( data[ off_b + j*4 + 3 ] > threshold ) {
                         clean= false;
                         break;
                     }
@@ -214,7 +227,7 @@ TP.ImageUtil= {};
 
                 // found an invalid pixel
                 if ( !clean ) {
-                    if ( currentY1<canvas.height-1 ) {
+                    if ( currentY1<canvas.height ) {
                         currentY1++;
                     } else {
                         checkBottom= false;
@@ -225,11 +238,9 @@ TP.ImageUtil= {};
             }
 
             clean= true;
-            if ( checkLeft ) {
-                i= currentY0 * canvas.width * 4 + currentX0 * 4;
-
-                for( j=0; clean && j < h; j++ ) {
-                    if ( data[ i + j*canvas.width*4 + 3 ] > threshold ) {
+            if ( checkLeft && h-2>=0 ) {
+                for( j=0; clean && j <= h-2; j++ ) {
+                    if ( data[ off_l + j * canvas.width * 4 + 3 ] > threshold ) {
                         clean= false;
                         break;
                     }
@@ -248,11 +259,9 @@ TP.ImageUtil= {};
             }
 
             clean= true;
-            if ( checkRight ) {
-                i= currentY0 * canvas.width * 4 + currentX1 * 4;
-
-                for( j=0; clean && j < h; j++ ) {
-                    if ( data[ i + j*canvas.width*4 + 3 ] > threshold ) {
+            if ( checkRight && h-2>=0 ) {
+                for( j=0; clean && j <= h-2; j++ ) {
+                    if ( data[ off_r + j * canvas.width * 4 + 3 ] > threshold ) {
                         clean= false;
                         break;
                     }
@@ -260,7 +269,7 @@ TP.ImageUtil= {};
 
                 // found an invalid pixel
                 if ( !clean ) {
-                    if ( currentX1<canvas.width-1 ) {
+                    if ( currentX1<canvas.width ) {
                         currentX1++;
                     } else {
                         checkRight= false;
@@ -270,11 +279,12 @@ TP.ImageUtil= {};
                 }
             }
 
-
-        } while( checkRight || checkLeft || checkTop || checkBottom );
+        } while( (checkRight || checkLeft || checkTop || checkBottom) && (w!=canvas.width && h!=canvas.height) );
 
         // The rectangle composed from (currentX0,currentY0)-(currentX1,currentY1) has the expected sub-image.
 
+        w= currentX1-currentX0+1;
+        h= currentY1-currentY0+1;
         var canvasr= document.createElement('canvas');
         canvasr.width= w;
         canvasr.height= h;

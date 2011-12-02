@@ -68,6 +68,11 @@
 
         getColumns : function() {
             return this.columns;
+        },
+
+        setName : function(name) {
+            this.name= name;
+            return this;
         }
     };
 
@@ -153,10 +158,19 @@
             var tpImage= new TP.Image().initialize( name, image );
 
             this.imagesList.push( tpImage );
-            //this.texturePage.addImage( tpImage, false, this.imagesPadding );
             this.updateAll();
 
             return this;
+        },
+
+        removeImage : function( imageName ) {
+            for( var i=0; i<this.imagesList.length; i++ ) {
+                if ( this.imagesList[i].getName()===imageName ) {
+                    this.imagesList.splice(i,1);
+                    this.updateAll();
+                    return this;
+                }
+            }
         },
 
         /**
@@ -203,6 +217,7 @@
 
         getCanvas : function( hideImagesGrid ) {
             this.texturePage.toCanvas( this.workingCanvas, false );
+/*
             if ( !hideImagesGrid ) {
                 for( var i=0; i< this.imagesList.length; i++ ) {
 
@@ -222,6 +237,7 @@
 
                 }
             }
+            */
             return this.workingCanvas;
         }
     };
