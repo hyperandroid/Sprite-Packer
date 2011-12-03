@@ -35,8 +35,14 @@ TP.ImageUtil= {};
      * Transparent means that every scan pixel is alpha=0.
      * @param image
      * @param threshold {number} any value below or equal to this will be optimized.
+     * @param right_bottom {boolean} optimize only right and bottom.
      */
-    TP.ImageUtil.optimize= function(image, threshold) {
+    TP.ImageUtil.optimize= function(image, threshold, right_bottom) {
+
+        if ( typeof right_bottom==='undefined' ) {
+            right_bottom= false;
+        }
+
         threshold>>=0;
 
         var canvas= document.createElement('canvas');
@@ -55,21 +61,25 @@ TP.ImageUtil= {};
         var miny= canvas.height, maxy=0;
         var minx= canvas.width, maxx=0;
 
-        var alpha= false;
-        for( i=0; i<canvas.height; i++ ) {
-            for( j=0; j<canvas.width; j++ ) {
-                if ( data[i*canvas.width*4 + 3+j*4]>threshold ) {
-                    alpha= true;
+        if ( right_bottom ) {
+            var alpha= false;
+            for( i=0; i<canvas.height; i++ ) {
+                for( j=0; j<canvas.width; j++ ) {
+                    if ( data[i*canvas.width*4 + 3+j*4]>threshold ) {
+                        alpha= true;
+                        break;
+                    }
+                }
+
+                if ( alpha ) {
                     break;
                 }
             }
-
-            if ( alpha ) {
-                break;
-            }
+            // i contiene el indice del ultimo scan que no es transparente total.
+            miny= i;
+        } else {
+            miny= 0;
         }
-        // i contiene el indice del ultimo scan que no es transparente total.
-        miny= i;
 
         alpha= false;
         for( i=canvas.height-1; i>=miny; i-- ) {
@@ -86,20 +96,23 @@ TP.ImageUtil= {};
         }
         maxy= i;
 
-
-        alpha= false;
-        for( j=0; j<canvas.width; j++ ) {
-            for( i=0; i<canvas.height; i++ ) {
-                if ( data[i*canvas.width*4 + 3+j*4 ]>threshold ) {
-                    alpha= true;
+        if ( right_bottom ) {
+            alpha= false;
+            for( j=0; j<canvas.width; j++ ) {
+                for( i=0; i<canvas.height; i++ ) {
+                    if ( data[i*canvas.width*4 + 3+j*4 ]>threshold ) {
+                        alpha= true;
+                        break;
+                    }
+                }
+                if ( alpha ) {
                     break;
                 }
             }
-            if ( alpha ) {
-                break;
-            }
+            minx= j;
+        } else {
+            minx= 0;
         }
-        minx= j;
 
         alpha= false;
         for( j=canvas.width-1; j>=minx; j-- ) {

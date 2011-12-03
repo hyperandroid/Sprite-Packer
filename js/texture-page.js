@@ -225,7 +225,7 @@
         width:                  1024,
         height:                 1024,
         allowImagesInvertion:   false,
-        padding:                4,
+        padding:                0,
         scan:                   null,
         images:                 null,
         criteria:               'area',
@@ -245,6 +245,10 @@
 
         clear : function() {
             this.createFromImages([]);
+        },
+
+        setPadding : function( p ) {
+            this.padding= p;
         },
 
         update : function(invert,padding,width,height) {

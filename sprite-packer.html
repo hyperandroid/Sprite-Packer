@@ -49,7 +49,13 @@
 
 
     .blockcontrol {
-        pagging: 5px;
+        padding: 5px 2px 5px 2px;
+        border: 1px;
+        background: #8d6340
+    }
+
+    .blockcontrolempty {
+        padding: 2px;
     }
 
     .control {
@@ -166,35 +172,56 @@
     <div class="control">
         <div class="control_content">
             <span class="blockcontrol">
-                <span>Packed texture dimensions:</span>
+                <span>Texture size:</span>
                 <span><input id="_width"  value="1024" maxlength="5" size="5"></span>
                 <span><input id="_height" value="1024" maxlength="5" size="5"></span>
-                <span><input type="button" value="Update canvas size" onclick="updatePacker();"></span>
+                <span><input type="button" value="Set" onclick="updatePackerSize();"></span>
             </span>
+
+            <span class="blockcontrolempty"></span>
+
             <span class="blockcontrol">
                 <span>Padding:</span>
-                <span><input id="_padding" value="2" maxlength="2" size="2"></span>
+                <span><input id="_padding" value="0" maxlength="2" size="2" onchange="changePadding()"></span>
             </span>
+
+            <span class="blockcontrolempty"></span>
+
             <span class="blockcontrol">
-                <span>Optimize</span>
-                <span><input type='checkbox' id='_optimize'></span>
+                <span>Outline</span>
+                <span><input type='checkbox' id='outline' onchange="changeOutline()"></span>
             </span>
+
+            <span class="blockcontrolempty"></span>
+
             <span class="blockcontrol">
                 <span>
                     Heuristic:
                 </span>
                 <span>
-                    <select onchange="changeHeuristic(this.options[this.selectedIndex].value);">
+                    <select id="heuristic" onchange="changeHeuristic();">
                         <option selected>Area</option>
                         <option>Width</option>
                         <option>Height</option>
                     </select>
                 </span>
             </span>
+
+            <span class="blockcontrolempty"></span>
+
             <span class="blockcontrol">
-                <span><input type="button" value="Clear" onclick="clearPacker();"></span>
+                <span>
+                    <select id="output" onchange="updateOutput();">
+                        <option>CSS</option>
+                        <option selected>CAAT</option>
+                    </select>
+                </span>
             </span>
+
+            <span class="blockcontrolempty"></span>
+
             <span class="blockcontrol">
+                <span><input type="button" value="Clear" onclick="if ( confirm('All changes will be lost. Contine ?') ) clearPacker();"></span>
                 <span><input type="button" value="Export Image" onclick="exportImages();"></span>
             </span>
             <!--
@@ -219,39 +246,37 @@
 
           <div class='info'>
               <div class="dropmsg" id="msg">
-                  A scaled version of the final packet texture will be shown.<br>
+                  A scaled version of the final packet texture is shown here.<br>
                   Play with the <code>heuristic</code> values to try different packing layouts.<br>
-                  Enable <code>optimize</code> checkbox to remove trailing empty space around images.<br>
                   Set <code>padding</code> value to add some extra space around packed images.<br>
+                  Enable outline to see exactly occupied images area.<br>
                   Set a custom packed image size and press 'update canvas size' to apply it.<br>
-
-                  When you're done, press <code>Export Image</code> to get your CSS sprited image.<br>
-
-                  Images which don't fit into the defined size, will silently be ignored.
+                  When you're done, press <code>Export Image</code> to get your CSS sprited image. The final
+                  generated image will be optimized so an smaller image that the set size will be generated.
+                  Images which don't fit into the defined size, will silently be ignored.<br>
+                  <code>ALT + Click</code> will extract subimages from the packed result. Try it out.
               </div>
           </div>
 
       </div>
 
-      <div class="imagesdata block2">
-          <div class="info dropmsg">
-              Copy this context as your css style map into the packed created texture.
-          </div>
-          <div class="imagescsstext dropmsg2 info" id="imagescsstext_" style="display:none;margin-top:15px;">
-              <textarea class="imagescsstext bloque info" style="width:100%;" id="imagescsstext"></textarea>
-          </div>
-      </div>
-
       <div class="imagesdata block3">
           <div class="info dropmsg">
-              This is additional info about the individual images.
-              Write into the field a text of the form <code>&lt;number&gt;x&lt;number&gt;</code>
-              (in example 3x3) to instrument the system to create css descriptors
-              for 9 subimages from the target image. This is useful to treat an
-              image as a compound image.
+              Change the name of the image (default to filename w/o dots).<br>
+              Write into the field a text of the form <code>&lt;number&gt;x&lt;number&gt;</code>.
+              For example 3x3 to create image descriptors for 9 subimages.
           </div>
           <div class="imagesdesc bloque dropmsg2 info" id="imagesdesc" style="display:none;margin-top:15px;"></div>
       </div>
+
+        <div class="imagesdata block2">
+            <div class="info dropmsg">
+                Copy this context as your css style map into the packed created texture.
+            </div>
+            <div class="imagescsstext dropmsg2 info" id="imagescsstext_" style="display:none;margin-top:15px;">
+                <textarea class="imagescsstext bloque info" style="width:100%;" id="imagescsstext"></textarea>
+            </div>
+        </div>
 
       <div style="clear:both;"></div>
 
@@ -266,10 +291,15 @@
 
 <script type="text/javascript">
 
+    var __auto_index= 0;
     var canvas;
     var ctx= null;
 
-    var packer= new TP.Packer();
+    var packer= new TP.Packer().addChangeListener( function(packer) {
+        updatePageInfo();
+        repaint();
+        updateOutput();
+    });
 
     function buildDropMessage(canvas, message, id, sclass) {
         var msg=            document.createElement('div');
@@ -291,13 +321,23 @@
     function onCanvasClick(e) {
         e.preventDefault();
 
-        var pos= TP.getCoord(e);
+        if ( !e.altKey ) {
+            return;
+        }
+        
+        var pos=    TP.getCoord(e);
+        var cc=     packer.getCanvas();
+        var x=      pos.x * cc.width/canvas.width;
+        var y=      pos.y * cc.height/canvas.height;
 
-        var img= TP.ImageUtil.extract( canvas, pos.x, pos.y, 32 );
+        var img= TP.ImageUtil.extract(
+                cc,
+                x>>0,
+                y>>0,
+                32 );
 
         if ( null!=img ) {
-            packer.addImage( 'abcd', img );
-            repaint();
+            packer.addImage( 'image'+__auto_index++, img );
         }
     }
 
@@ -316,16 +356,17 @@
                             "Use Chrome or Firefox.",
                     'help_message',
                     'error');
+            return;
         }
 
         canvas.addEventListener( 'mouseup', onCanvasClick, false );
-    }
 
-    var elem_container= document.getElementById('packer_canvas');
-    elem_container.addEventListener( 'mousedown', onDocumentMouseDown, false );
-    elem_container.addEventListener( 'dragover',  onDocumentDragOver, false );
-    elem_container.addEventListener( 'dragleave', onDocumentLeave, false );
-    elem_container.addEventListener( 'drop',      onDocumentDrop, false );
+        var elem_container= document.getElementById('packer_canvas');
+        elem_container.addEventListener( 'mousedown', onDocumentMouseDown, false );
+        elem_container.addEventListener( 'dragover',  onDocumentDragOver, false );
+        elem_container.addEventListener( 'dragleave', onDocumentLeave, false );
+        elem_container.addEventListener( 'drop',      onDocumentDrop, false );
+    }
 
     function onDocumentMouseDown(event) {
         event.stopPropagation();
@@ -401,29 +442,51 @@
 
     }
 
-    function updatePacker() {
+    function changeOutline() {
+        var el= document.getElementById('outline');
+        packer.setOutline( el.checked );
+    }
 
-        var padding= parseInt(document.getElementById("_padding").value,10);
-        if ( -1==padding ) {
-            padding= 4;
+    function getPaddingValue() {
+        var padding= -1;
+        var elp= document.getElementById("_padding");
+        try {
+            padding= parseInt(elp.value,10);
+        } catch(e) {}
+        if ( padding<0 ) {
+            padding= 0;
+            elp.value= padding;
         }
+
+        return padding;
+    }
+
+    function changePadding() {
+        packer.setImagesPadding(getPaddingValue());
+    }
+
+    function updatePackerSize() {
+
         var invert= false;
         var width= parseInt(document.getElementById("_width").value,10);
         var height= parseInt(document.getElementById("_height").value,10);
 
-        packer.updatePacker( width||2048, height||2048, padding );
-        updatePageInfo();
+        packer.updatePacker( width||2048, height||2048, getPaddingValue(), getHeuristicValue() );
     }
 
     function clearPacker() {
         document.getElementById('help_message').style.display='block';
         packer.clear();
-        updatePageInfo();
-        repaint();
     }
 
     function updateOutput() {
-        return updateCAAT();
+        var el= document.getElementById('output');
+        var option= el.options[ el.selectedIndex ].value.toLowerCase();
+        if ( option==='css' ) {
+            return updateCSS();
+        } else {
+            return updateCAAT();
+        }
     }
 
     function updateCSS() {
@@ -659,27 +722,33 @@
         }
         dst.appendChild(dc);
 
-        repaint();
-
-        updateOutput();
     }
 
     function repaint() {
+
+        packer.drawOn( canvas, ctx );
+/*
         ctx.fillStyle='rgba(0,0,0,0)';
         ctx.clearRect(0,0,canvas.width,canvas.height);
         ctx.drawImage( packer.getCanvas(), 0, 0, canvas.width, canvas.height );
+*/
     }
 
     function exportImages() {
-        var canvas= packer.getCanvas();
+        var canvas= packer.getCanvas(false);
+        canvas= TP.ImageUtil.optimize(canvas, 0, true);
         var str= "image/png";
         var strData= canvas.toDataURL(str);
         document.location.href= strData.replace( str, "image/octet-stream" );
     }
 
-    function changeHeuristic(event) {
-        packer.changeHeuristic(event.toLowerCase());
-        updatePacker();
+    function getHeuristicValue() {
+        var el= document.getElementById('heuristic');
+        return el.options[ el.selectedIndex ].value.toLowerCase();
+    }
+
+    function changeHeuristic() {
+        packer.changeHeuristic(getHeuristicValue());
     }
 
     function extractor() {

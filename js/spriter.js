@@ -88,6 +88,7 @@
      */
     TP.Packer= function() {
         this.imagesList=    [];
+        this.listenerList=  [];
 
         this.createTexturePage();
         this.createWorkingCanvas();
@@ -113,13 +114,24 @@
         texturePage         : null,
 
         imagesPadding       : 0,
+        heuristic           : 'area',
+        outline             : false,
 
         workingCanvas       : null,
         ctx                 : null,
 
+        listenerList        : null,
+
         createTexturePage : function() {
             this.texturePage=   new TP.TexturePage( this.pageWidth, this.pageHeight );
+            this.texturePage.setPadding( this.imagesPadding );
+            this.texturePage.changeHeuristic( this.heuristic );
             return this;
+        },
+
+        changeHeuristic : function( heuristic ) {
+            this.texturePage.changeHeuristic( heuristic );
+            this.updateAll();
         },
 
         createWorkingCanvas : function() {
@@ -180,20 +192,22 @@
             this.imagesList= [];
             this.texturePage.clear();
             this.ctx.clearRect(0,0,this.workingCanvas.width,this.workingCanvas.height);
+            this.fireChangeEvent();
             return this;
         },
 
         setImagesPadding : function( padding ) {
-            this.imagesPadding= padding;
+            this.texturePage.setPadding( padding );
 
             this.updateAll();
             return this;
         },
 
-        updatePacker : function( pw, ph, padding ) {
+        updatePacker : function( pw, ph, padding, heuristic ) {
             this.pageWidth=     pw;
             this.pageHeight=    ph;
             this.imagesPadding= padding;
+            this.heuristic=     heuristic;
 
             this.createTexturePage();
             this.updateAll();
@@ -212,13 +226,45 @@
         updateAll : function() {
             this.texturePage.createFromImages( extractImagesArray(this.imagesList) );
             this.texturePage.toCanvas( this.workingCanvas, false );
+            this.fireChangeEvent();
             return this;
         },
 
-        getCanvas : function( hideImagesGrid ) {
+        getCanvas : function( outline ) {
             this.texturePage.toCanvas( this.workingCanvas, false );
-/*
-            if ( !hideImagesGrid ) {
+
+            return this.workingCanvas;
+        },
+
+        setOutline : function( bool ) {
+            this.outline= bool;
+            this.updateAll();
+        },
+
+        addChangeListener : function( f ) {
+            this.listenerList.push(f);
+            return this;
+        },
+
+        fireChangeEvent : function( ) {
+            for( var i= this.listenerList.length-1; i>=0; i-- ) {
+                this.listenerList[i]( this );
+            }
+        },
+
+        drawOn : function( canvas, ctx ) {
+
+            ctx.fillStyle='rgba(0,0,0,0)';
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+
+            ctx.drawImage( this.workingCanvas, 0, 0, canvas.width, canvas.height );
+
+            var sx= canvas.width/this.workingCanvas.width;
+            var sy= canvas.height/this.workingCanvas.height;
+
+
+            ctx.strokeStyle= 'blue';
+            if ( this.outline ) {
                 for( var i=0; i< this.imagesList.length; i++ ) {
 
                     var imgE= this.imagesList[i];
@@ -226,19 +272,20 @@
 
                     for( var t=0; t<imgE.getRows(); t++ ) {
                         for( var u=0; u<imgE.getColumns(); u++ ) {
-                            this.ctx.strokeStyle= 'blue';
-                            this.ctx.strokeRect(
-                                    img.__tx+ u*img.__w/imgE.getColumns(),
-                                    img.__ty+ t*img.__h/imgE.getRows(),
-                                    img.__w/imgE.getColumns(),
-                                    img.__h/imgE.getRows() );
+                            ctx.strokeRect(
+                                    sx*(img.__tx+ u*img.__w/imgE.getColumns()),
+                                    sy*(img.__ty+ t*img.__h/imgE.getRows()),
+                                    sx*(img.__w/imgE.getColumns()),
+                                    sy*(img.__h/imgE.getRows()) );
                         }
                     }
 
                 }
             }
-            */
-            return this.workingCanvas;
+
+
+
         }
+
     };
 })();
