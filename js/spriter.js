@@ -73,7 +73,108 @@
         setName : function(name) {
             this.name= name;
             return this;
+        },
+
+        optimize : function() {
+            this.image= TP.ImageUtil.optimize( this.image, 32, false );
+            return this;
+        },
+
+        describeAsCSS : function() {
+            function cssElement( name, x, y, w, h, r, c ) {
+                var csstext= '';
+
+                if ( -1!==r && -1!==c ) {
+                    csstext+= '.'+ name + '_'+r+'_'+c+ ' {\n';
+                    csstext+= '   background: url("packed_img.png") no-repeat -'+(x+c*w)+"px -"+(y+r*h)+"px;\n";
+                } else {
+                    csstext+= '.'+ name + ' {\n';
+                    csstext+= '   background: url("packed_img.png") no-repeat -'+x+"px -"+y+"px;\n";
+                }
+                csstext+= '   width:  '+w+'px;\n';
+                csstext+= '   height: '+h+'px;\n';
+                csstext+= '}\n\n';
+
+                return csstext;
+            }
+
+            var csstext='';
+
+            var bi= this.getName().replace('.','_');
+
+            var img= this.getImage();
+            csstext+= cssElement( bi, img.__tx, img.__ty, img.__w, img.__h, -1, -1);
+
+            if ( this.getRows()!=1 || this.getColumns()!=1 ) {
+                for( var t=0; t<this.getRows(); t++ ) {
+                    for( var u=0; u<this.getColumns(); u++ ) {
+                        csstext+= cssElement(
+                            bi,
+                            img.__tx,
+                            img.__ty,
+                            img.__w / this.getColumns(),
+                            img.__h / this.getRows(),
+                            t,
+                            u);
+                    }
+                }
+            }
+
+            return csstext;
+        },
+
+        describeAsCAAT : function() {
+            function cssElement( name, x, y, w, h, r, c ) {
+                var csstext= "\n";
+
+                if ( -1!==r && -1!==c ) {
+                    csstext+= "&nbsp;"+ name + '_'+r+'_'+c+ ": {\n";
+                    csstext+= '&nbsp;  x: '+(x+c*w)+",\n";
+                    csstext+= '&nbsp;  y: '+(y+r*h)+",\n";
+                } else {
+                    csstext+= "&nbsp;" + name + ": {\n";
+                    csstext+= '&nbsp;  x: '+x+",\n";
+                    csstext+= '&nbsp;  y: '+y+",\n";
+                }
+
+                csstext+= '&nbsp;  width:  '+w+',\n';
+                csstext+= '&nbsp;  height: '+h+'\n';
+
+                csstext+= '}\n';
+
+                return csstext;
+            }
+
+            var csstext='';
+            var bi= this.getName().replace('.','_');
+
+            var img= this.getImage();
+            csstext+= cssElement( bi, img.__tx, img.__ty, img.__w, img.__h, -1, -1);
+
+            if ( this.getRows()!=1 || this.getColumns()!=1 ) {
+                csstext+=',';
+
+                for( var t=0; t<this.getRows(); t++ ) {
+                    for( var u=0; u<this.getColumns(); u++ ) {
+                        csstext+= cssElement(
+                            bi,
+                            img.__tx,
+                            img.__ty,
+                            img.__w / this.getColumns(),
+                            img.__h / this.getRows(),
+                            t,
+                            u);
+
+                        if ( t*this.getColumns()+u < this.getRows()*this.getColumns()-1 ) {
+                            csstext+=",";
+                        }
+                    }
+                }
+            }
+
+            return csstext;
         }
+
     };
 
 })();
@@ -155,15 +256,34 @@
         /**
          * Get this packer information representation to be consumed as CSS style.
          */
-        createCSSData : function() {
-            return ''
+        describeAsCSS : function() {
+
+            var csstext='';
+            for( var i=0, l=this.getNumImages(); i<l; i++ ) {
+                csstext+= this.getImageElement(i).describeAsCSS();
+            }
+
+            return csstext;
         },
 
         /**
          * Get this packer information representation to be consumed by a CAAT.SpriteImage object instance.
          */
-        createCAATData : function() {
-            return '';
+        describeAsCAAT : function() {
+            var csstext='';
+            csstext= "{";
+
+            for( var i=0, l=this.getNumImages(); i<l; i++ ) {
+
+                csstext+= this.getImageElement(i).describeAsCAAT();
+                if ( i<l-1 ) {
+                    csstext+=',';
+                }
+
+            }
+            csstext+= "}";
+
+            return csstext;
         },
 
         addImage : function( name, image ) {
@@ -173,6 +293,16 @@
             this.updateAll();
 
             return this;
+        },
+
+        findImageElByName : function( name ) {
+            for( var i=0; i<this.imagesList.length; i++ ) {
+                if ( this.imagesList[i].getName()===name ) {
+                    return this.imagesList[i];
+                }
+            }
+
+            return null;
         },
 
         removeImage : function( imageName ) {
@@ -282,9 +412,16 @@
 
                 }
             }
+        },
 
+        optimize : function( imageName ) {
+            var ie= this.findImageElByName( imageName );
+            if ( ie ) {
+                ie.optimize();
+                this.updateAll();
+            }
 
-
+            return this;
         }
 
     };

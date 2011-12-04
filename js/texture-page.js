@@ -14,7 +14,10 @@
         u:          0,
         v:          0,
         glTexture:  null
+        
     };
+
+
 
 })();
 
@@ -416,6 +419,14 @@
 
         changeHeuristic : function(criteria) {
             this.criteria= criteria;
+        },
+
+        describeAsCSS : function() {
+            
+        },
+
+        describeAsCAAT : function() {
+
         }
     };
 })();

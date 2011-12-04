@@ -61,7 +61,7 @@ TP.ImageUtil= {};
         var miny= canvas.height, maxy=0;
         var minx= canvas.width, maxx=0;
 
-        if ( right_bottom ) {
+        if ( !right_bottom ) {
             var alpha= false;
             for( i=0; i<canvas.height; i++ ) {
                 for( j=0; j<canvas.width; j++ ) {
@@ -96,7 +96,7 @@ TP.ImageUtil= {};
         }
         maxy= i;
 
-        if ( right_bottom ) {
+        if ( !right_bottom ) {
             alpha= false;
             for( j=0; j<canvas.width; j++ ) {
                 for( i=0; i<canvas.height; i++ ) {

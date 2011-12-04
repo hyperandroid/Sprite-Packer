@@ -160,14 +160,6 @@
 
 <body class="body" onload="initialize();">
 
-<div id="extractor" class="extractor">
-    <div class="extractor_content">
-        <div class="pre_edit" id="extractor_droparea">
-            <canvas id="extractor_canvas"></canvas>
-        </div>
-    </div>
-</div>
-
 <div id="packer">
     <div class="control">
         <div class="control_content">
@@ -221,7 +213,7 @@
             <span class="blockcontrolempty"></span>
 
             <span class="blockcontrol">
-                <span><input type="button" value="Clear" onclick="if ( confirm('All changes will be lost. Contine ?') ) clearPacker();"></span>
+                <span><input type="button" value="Clear" onclick="if ( confirm('All changes will be lost. Continue ?') ) clearPacker();"></span>
                 <span><input type="button" value="Export Image" onclick="exportImages();"></span>
             </span>
             <span style="float: right;">
@@ -262,14 +254,15 @@
           <div class="info dropmsg">
               Change the name of the image (default to filename w/o dots).<br>
               Write into the field a text of the form <code>&lt;number&gt;x&lt;number&gt;</code>.
-              For example 3x3 to create image descriptors for 9 subimages.
+              For example 3x3 to create image descriptors for 9 subimages.<br>
+              Press <img src="res/optimize.png"> to remove trailing alpha around images.<br>
           </div>
           <div class="imagesdesc bloque dropmsg2 info" id="imagesdesc" style="display:none;margin-top:15px;"></div>
       </div>
 
         <div class="imagesdata block2">
             <div class="info dropmsg">
-                Copy this context as your css style map into the packed created texture.
+                Copy this context as your css style map to the created texture.
             </div>
             <div class="imagescsstext dropmsg2 info" id="imagescsstext_" style="display:none;margin-top:15px;">
                 <textarea class="imagescsstext bloque info" style="width:100%;" id="imagescsstext"></textarea>
@@ -422,7 +415,7 @@
                 reader.onerror= errorHandler;
                 reader.onloadend = function ( ev ) {
 
-//                    if (ev.target.readyState == FileReader.DONE) {
+                    if (ev.target.readyState == FileReader.DONE) {
                         var _image = document.createElement( 'img' );
 
                         _image.onload = function () {
@@ -431,7 +424,7 @@
                             updatePageInfo();
                         };
                         _image.src = ev.target.result;
-//                    }
+                    }
                 };
 
                 reader.readAsDataURL( file );
@@ -481,129 +474,10 @@
         var el= document.getElementById('output');
         var option= el.options[ el.selectedIndex ].value.toLowerCase();
         if ( option==='css' ) {
-            return updateCSS();
+            document.getElementById('imagescsstext').innerHTML= packer.describeAsCSS();
         } else {
-            return updateCAAT();
+            document.getElementById('imagescsstext').innerHTML= packer.describeAsCAAT();
         }
-    }
-
-    function updateCSS() {
-
-        function cssElement( name, x, y, w, h, r, c ) {
-            var csstext= '';
-
-            if ( -1!==r && -1!==c ) {
-                csstext+= '.'+ name + '_'+r+'_'+c+ ' {\n';
-                csstext+= '   background: url("packed_img.png") no-repeat -'+(x+c*w)+"px -"+(y+r*h)+"px;\n";
-            } else {
-                csstext+= '.'+ name + ' {\n';
-                csstext+= '   background: url("packed_img.png") no-repeat -'+x+"px -"+y+"px;\n";
-            }
-            csstext+= '   width:  '+w+'px;\n';
-            csstext+= '   height: '+h+'px;\n';
-            csstext+= '}\n\n';
-
-            return csstext;
-        }
-
-        var css=document.getElementById('imagescsstext');
-        var csstext='';
-
-        css.innerHTML='';
-
-        for( var i=0, l=packer.getNumImages(); i<l; i++ ) {
-            var imageEl= packer.getImageElement(i);
-            var bi= imageEl.getName().replace('.','_');
-
-            var img= imageEl.getImage();
-            csstext+= cssElement( bi, img.__tx, img.__ty, img.__w, img.__h, -1, -1);
-
-            if ( imageEl.getRows()!=1 || imageEl.getColumns()!=1 ) {
-                for( var t=0; t<imageEl.getRows(); t++ ) {
-                    for( var u=0; u<imageEl.getColumns(); u++ ) {
-                        csstext+= cssElement(
-                            bi,
-                            img.__tx,
-                            img.__ty,
-                            img.__w / imageEl.getColumns(),
-                            img.__h / imageEl.getRows(),
-                            t,
-                            u);
-                    }
-                }
-            }
-
-        }
-
-        css.innerHTML=csstext;
-    }
-
-    function updateCAAT() {
-        function cssElement( name, x, y, w, h, r, c ) {
-            var csstext= "\n";
-
-            if ( -1!==r && -1!==c ) {
-                csstext+= "&nbsp;"+ name + '_'+r+'_'+c+ ": {\n";
-                csstext+= '&nbsp;  x: '+(x+c*w)+",\n";
-                csstext+= '&nbsp;  y: '+(y+r*h)+",\n";
-            } else {
-                csstext+= "&nbsp;" + name + ": {\n";
-                csstext+= '&nbsp;  x: '+x+",\n";
-                csstext+= '&nbsp;  y: '+y+",\n";
-            }
-
-            csstext+= '&nbsp;  width:  '+w+',\n';
-            csstext+= '&nbsp;  height: '+h+'\n';
-
-            csstext+= '}\n';
-
-            return csstext;
-        }
-
-        var css=document.getElementById('imagescsstext');
-        var csstext='';
-
-        css.innerHTML='';
-
-
-        csstext= "{";
-
-        for( var i=0, l=packer.getNumImages(); i<l; i++ ) {
-            var imageEl= packer.getImageElement(i);
-            var bi= imageEl.getName().replace('.','_');
-
-            var img= imageEl.getImage();
-            csstext+= cssElement( bi, img.__tx, img.__ty, img.__w, img.__h, -1, -1);
-
-            if ( imageEl.getRows()!=1 || imageEl.getColumns()!=1 ) {
-                csstext+=',';
-                
-                for( var t=0; t<imageEl.getRows(); t++ ) {
-                    for( var u=0; u<imageEl.getColumns(); u++ ) {
-                        csstext+= cssElement(
-                            bi,
-                            img.__tx,
-                            img.__ty,
-                            img.__w / imageEl.getColumns(),
-                            img.__h / imageEl.getRows(),
-                            t,
-                            u);
-
-                        if ( t*imageEl.getColumns()+u < imageEl.getRows()*imageEl.getColumns()-1 ) {
-                            csstext+=",";
-                        }
-                    }
-                }
-            }
-
-            if ( i<l-1 ) {
-                csstext+=',';
-            }
-        }
-
-        csstext+= "}";
-
-        css.innerHTML=csstext;
     }
 
     function updatePageInfo() {
@@ -696,22 +570,39 @@
 
                     var img= document.createElement('img');
                     img.src= 'res/remove.png';
+                    img.alt= 'Remove image';
                     img.onclick= (function(image) {
                         return function() {
                             if ( confirm('Remove '+image.getName()+'?') ) {
                                 packer.removeImage( image.getName() );
-                                updateOutput();
-                                repaint();
                             }
                         }
                     })(image);
 
                     remove.appendChild( img );
 
-                tr.appendChild(imgthumb);
-                tr.appendChild(imgname);
-                tr.appendChild(imggrid);
-                tr.appendChild(remove);
+            var optimize= document.createElement('td');
+                optimize.setAttribute( 'width', 30 );
+
+                var imgoptimize= document.createElement('img');
+                imgoptimize.src= 'res/optimize.png';
+                imgoptimize.alt= 'Optimize image';
+                imgoptimize.onclick= (function(image) {
+                    return function() {
+                        if ( confirm('Optimize image '+image.getName()+'?') ) {
+                            packer.optimize( image.getName() );
+                        }
+                    }
+                })(image);
+
+                optimize.appendChild( imgoptimize );
+
+            tr.appendChild(imgthumb);
+            tr.appendChild(imgname);
+            tr.appendChild(imggrid);
+            tr.appendChild(optimize);
+
+            tr.appendChild(remove);
         }
 
         var dst= document.getElementById('imagesdesc');
@@ -723,13 +614,7 @@
     }
 
     function repaint() {
-
         packer.drawOn( canvas, ctx );
-/*
-        ctx.fillStyle='rgba(0,0,0,0)';
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage( packer.getCanvas(), 0, 0, canvas.width, canvas.height );
-*/
     }
 
     function exportImages() {
@@ -747,18 +632,6 @@
 
     function changeHeuristic() {
         packer.changeHeuristic(getHeuristicValue());
-    }
-
-    function extractor() {
-        var packer= document.getElementById('packer');
-        packer.style.display= 'none';
-
-        var extractor= document.getElementById('extractor');
-        extractor.style.display= 'block';
-        var extractor_canvas= document.getElementById('extractor_canvas');
-        extractor_canvas.width= 500;
-        extractor_canvas.height= 500;
-        buildDropMessage(extractor_canvas,'Drop one image <b>here</b>','extractor_help_message');
     }
 
 </script>
