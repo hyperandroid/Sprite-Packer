@@ -638,7 +638,7 @@
 
                     var inputName= document.createElement('input');
                     inputName.type='text';
-                    inputName.style['width']='99%';
+                    inputName.style['width']='148';
                     inputName.value= image.getName();
                     imgname.appendChild( inputName );
                     inputName.onchange= (function(image) {
@@ -658,11 +658,11 @@
                     })(image);
 
                 var imggrid= document.createElement('td');
-                    imggrid.setAttribute('width','100%');
+                    imggrid.setAttribute('width','60');
 
                     var input= document.createElement('input');
                     input.type='text';
-                    input.style['width']='99%';
+                    input.style['width']='58';
                     if ( image.getRows()!=1 || image.getColumns()!=1 ) {
                         input.value= ''+image.getRows()+'x'+image.getColumns();
                     }
@@ -694,7 +694,7 @@
                 var remove= document.createElement('td');
                     remove.setAttribute( 'width', 30 );
 
-                    var img= document.createElement('image');
+                    var img= document.createElement('img');
                     img.src= 'res/remove.png';
                     img.onclick= (function(image) {
                         return function() {
