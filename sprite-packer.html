@@ -149,8 +149,11 @@
         position: absolute;
     }
 
-    .extractor {
-        display: none;
+    #footer_github {
+        position: fixed;
+        right: 0;
+        bottom: -2px;
+        z-index: 1000;
     }
 
 </style>
@@ -272,6 +275,12 @@
       <div style="clear:both;"></div>
 
     </div>
+</div>
+
+<div id="footer_github">
+    <a href="https://github.com/hyperandroid/Sprite-Packer" target="_blank">
+        <img src="res/github.png" alt="github social coding"/>
+    </a>
 </div>
 
 <script src="js/namespace.js"></script>

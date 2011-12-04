@@ -100,7 +100,7 @@
 
             var csstext='';
 
-            var bi= this.getName().replace('.','_');
+            var bi= this.getName().replace(/ |\./g,'_');
 
             var img= this.getImage();
             csstext+= cssElement( bi, img.__tx, img.__ty, img.__w, img.__h, -1, -1);
@@ -146,7 +146,7 @@
             }
 
             var csstext='';
-            var bi= this.getName().replace('.','_');
+            var bi= this.getName().replace(/ |\./g,'_');
 
             var img= this.getImage();
             csstext+= cssElement( bi, img.__tx, img.__ty, img.__w, img.__h, -1, -1);
