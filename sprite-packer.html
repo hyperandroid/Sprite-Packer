@@ -319,7 +319,7 @@
     function onCanvasClick(e) {
         e.preventDefault();
 
-        if ( !e.altKey || !e.ctrlKey || !e.shiftKey ) {
+        if ( !e.altKey && !e.ctrlKey && !e.shiftKey ) {
             return;
         }
         
