@@ -224,14 +224,12 @@
                 <span><input type="button" value="Clear" onclick="if ( confirm('All changes will be lost. Contine ?') ) clearPacker();"></span>
                 <span><input type="button" value="Export Image" onclick="exportImages();"></span>
             </span>
-            <!--
             <span style="float: right;">
                 <a href="http://twitter.com/share" class="twitter-share-button" data-count="horizontal" data-via="hyperandroid">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
             </span>
             <span style="float:right;">
                 <iframe src="http://www.facebook.com/plugins/like.php?href=http%3A%2F%2Flabs.hyperandroid.com/static/texture/spriter.html&amp;layout=button_count&amp;show_faces=false&amp;width=120&amp;action=like&amp;font=arial&amp;colorscheme=light&amp;height=21" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:120px; height:21px;" allowTransparency="true"></iframe>
             </span>
-            -->
         </div>
     </div>
 
@@ -424,8 +422,8 @@
                 reader.onerror= errorHandler;
                 reader.onloadend = function ( ev ) {
 
-                    if (ev.target.readyState == FileReader.DONE) {
-                        var _image = document.createElement( 'image' );
+//                    if (ev.target.readyState == FileReader.DONE) {
+                        var _image = document.createElement( 'img' );
 
                         _image.onload = function () {
 
@@ -433,7 +431,7 @@
                             updatePageInfo();
                         };
                         _image.src = ev.target.result;
-                    }
+//                    }
                 };
 
                 reader.readAsDataURL( file );
